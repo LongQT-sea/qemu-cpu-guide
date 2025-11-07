@@ -9,11 +9,11 @@
 ---
 
 ## Simple Windows Guests
-For basic Windows guests without WSL2, Hyper-V, or VBS/Device Guard, use named QEMU CPU models corresponding to your hardware. For example, if you have Skylake CPUs, use `Skylake-Client-v4`.
+For basic Windows guests without WSL2, Hyper-V, or VBS enabled, use named QEMU CPU models corresponding to your hardware. For example, if you have Skylake CPUs, use `Skylake-Client-v4`.
 
 ---
 
-## Hyper-V, WSL2, and VBS/Device Guard Enabled Guests
+## Hyper-V, WSL2, and VBS Enabled Guests
 To achieve the best performance with these features enabled:
 
 ### 1. Create Custom CPU Models
@@ -85,11 +85,8 @@ For modern CPUs, you can spoof the reported base speed using the `tsc-frequency`
 To spoof a 10GHz CPU with the brand name "Intel Core i8-8800KS":
 
 ```
-# Method 1: Using global parameters (keeps CPU model from GUI)
+# Using global parameters (keeps CPU model from GUI)
 qm set <VMID> --args "-global cpu.model-id='Intel Core i8-8800KS' -global cpu.tsc-frequency=10000000000"
-
-# Method 2: Override CPU model entirely
-qm set <VMID> --args "-cpu Skylake-Client-v4,vendor=GenuineIntel,model-id='Intel Core i8-8800KS',tsc-frequency=10000000000"
 ```
 
 ### Additional Parameters
