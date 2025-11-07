@@ -1,6 +1,6 @@
 # Advanced Guide: QEMU CPU Models for KVM Guests - Debunking the "host" CPU Model Performance Myth
 > [!NOTE]
-> Target audience: single-node homelab setups using AVX2-capable processors.
+> Target single-node homelab setups using AVX2-capable processors.
 
 > [!TIP]
 > Always install the latest CPU microcode for your CPU.  
@@ -14,11 +14,18 @@ For basic Windows guests without WSL2, Hyper-V, or VBS enabled, use named QEMU C
 ---
 
 ## Hyper-V, WSL2, and VBS Enabled Guests
-To achieve the best performance with these features enabled:
+> [!Note]
+> When using the default `host` model in Proxmox VE, it will result in this QEMU `-cpu` argument when starting a VM:
+>
+> Check with `qm show VMID --pretty`
+> ```
+> -cpu 'host,hv_ipi,hv_relaxed,hv_reset,hv_runtime,hv_spinlocks=0x1fff,hv_stimer,hv_synic,hv_time,hv_vapic,hv_vpindex,+kvm_pv_eoi,+kvm_pv_unhalt'
+> ```
+> This is fine as long as you don't have any of these enabled: WSL2, Hyper-V, or VBS.
 
-### 1. Create Custom CPU Models
-Create the file `/etc/pve/virtual-guest/cpu-models.conf` with the following content:
+### To achieve the best performance with Hyper-V, WSL2, and VBS enabled, we need to create a custom CPU model:
 
+1. Create the file `/etc/pve/virtual-guest/cpu-models.conf` with the following content:
 ```
 # Proxmox VE Custom CPU Models
 cpu-model: amd-hide-vm-for-windows
@@ -27,7 +34,6 @@ cpu-model: amd-hide-vm-for-windows
     hidden 1
     hv-vendor-id amd
     reported-model host
-
 cpu-model: intel-hide-vm-for-windows
     flags -hypervisor;+invtsc;+hv-frequencies;+hv-evmcs;+hv-reenlightenment;+hv-emsr-bitmap;+hv-tlbflush-direct
     phys-bits host
@@ -36,14 +42,21 @@ cpu-model: intel-hide-vm-for-windows
     reported-model host
 ```
 
-### 2. Apply the Custom Model
-Select either `amd-hide-vm-for-windows` or `intel-hide-vm-for-windows` CPU model in the Proxmox web GUI, depending on your processor.
+2. Select either `amd-hide-vm-for-windows` or `intel-hide-vm-for-windows` CPU model in the Proxmox web GUI, depending on your processor.
+
+> [!Note]
+> This will result in the following QEMU `-cpu` argument when starting the Windows VM with `intel-hide-vm-for-windows`:
+> ```
+> -cpu 'host,+hv-emsr-bitmap,+hv-evmcs,+hv-frequencies,+hv-reenlightenment,+hv-tlbflush-direct,hv_ipi,hv_relaxed,hv_reset,hv_runtime,hv_spinlocks=0x1fff,hv_stimer,hv_synic,hv_time,hv_vapic,hv_vendor_id=intel,hv_vpindex,-hypervisor,+invtsc,kvm=off,+kvm_pv_eoi,+kvm_pv_unhalt,host-phys-bits=true'
+> ```
 
 > [!TIP]
-> To run Android emulators like [MEmu](https://www.memuplay.com/) smoothly, you need to have a GPU and enable Hyper-V:
+> With these custom host CPU models configured, you can now run Android emulators very smoothly inside your Windows VM.
+> You need to have a GPU passthrough to the VM and enable Hyper-V:
 > ```
 > Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
 > ```
+> Tested with [MEmu](https://www.memuplay.com/).
 
 ---
 
